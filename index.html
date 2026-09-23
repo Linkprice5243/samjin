@@ -642,21 +642,23 @@ function route(){
 }
 window.addEventListener('hashchange',route);
 
-/* 방향키로 왼쪽 메뉴 순서대로 페이지 이동 (입력/선택 중에는 비활성) */
-document.addEventListener('keydown', e => {
-  if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.repeat) return;
-  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-  if ($('#lb').classList.contains('on')) return;
+/* 방향키 페이지 이동: 버튼에 포커스가 남아 있어도 동작 */
+window.addEventListener('keydown', e => {
+  if (!['ArrowRight', 'ArrowLeft'].includes(e.key)) return;
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   const target = e.target;
-  if (target && (target.isContentEditable || target.closest('input, textarea, select, button, [contenteditable="true"], [role="slider"], [role="textbox"]'))) return;
-  const pages = [...document.querySelectorAll('#nav a[data-p]')].map(a => a.dataset.p);
-  const current = (location.hash || '#overview').slice(1);
+  if (target && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable], [role="slider"], [role="textbox"]'))) return;
+  if (document.getElementById('lb')?.classList.contains('on')) return;
+  const pages = Array.from(document.querySelectorAll('#nav a[data-p]'), a => a.dataset.p);
+  const current = decodeURIComponent(location.hash.slice(1)) || 'overview';
   const index = pages.indexOf(current);
   const next = index + (e.key === 'ArrowRight' ? 1 : -1);
   if (index < 0 || next < 0 || next >= pages.length) return;
   e.preventDefault();
-  location.hash = pages[next];
-});
+  e.stopPropagation();
+  location.hash = '#' + pages[next];
+}, true);
+
 route();
 </script>
 </body>
