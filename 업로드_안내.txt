@@ -1,0 +1,10 @@
+삼진어묵 기존 웹페이지 통합본
+
+1. GitHub https://github.com/linkprice5243/samjin 접속
+2. index.html 클릭 → 연필 아이콘 클릭
+3. 기존 편집창의 코드 전체 선택(Ctrl+A) 후, 이 ZIP의 index.html 내용 전체를 붙여넣기(Ctrl+V)
+4. Commit changes 클릭 후 main 브랜치에 저장
+5. Pages 배포 후 https://linkprice5243.github.io/samjin/#business 및 #seollal27 확인
+
+주의: data.js 및 img 폴더는 삭제하거나 교체하지 마세요. 기존 광고 데이터와 이미지를 사용합니다.
+2026년 설날 Meta 실제 베스트 소재 원본은 이 index.html에 포함되지 않아, 2027년 페이지에는 예시 목업과 운영 방향만 반영했습니다.
