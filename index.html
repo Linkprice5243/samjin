@@ -315,8 +315,8 @@ th.sort.on.asc::after{content:" ▴"}
         <div class="chart tall"><canvas id="c-daily"></canvas></div>
       </div>
       <div class="panel mt">
-        <h2>일자별 광고비 · 매출액 · ROAS</h2><p class="sub">선택한 시즌의 실제 날짜 기준 · 광고비와 매출액은 왼쪽 축, ROAS는 오른쪽 축</p>
-        <div class="chart tall"><canvas id="c-overlay"></canvas></div>
+        <h2>일자별 광고비 · 매출액 · ROAS</h2><p class="sub">선택한 시즌의 실제 날짜 기준 · Meta·네이버 검색광고·모비온 합산</p>
+        <div class="tbl-wrap"><table id="t-daily"></table></div>
       </div>
     </section>
 
@@ -562,25 +562,24 @@ function renderDaily(season){
     {type:'line',label:'합계 광고비',data:d.map(x=>(x.meta_s+x.naver_s+x.mob_s)/1e6),borderColor:css('--bad'),backgroundColor:css('--bad'),yAxisID:'y2',tension:.3,pointRadius:0,borderWidth:2,order:1}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{tooltip:{callbacks:{title:t=>`${d[t[0].dataIndex].date} (${d[t[0].dataIndex].d})`,label:t=>`${t.dataset.label}: ${won(t.raw*1e6)}`}}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{autoSkip:true,maxTicksLimit:14,maxRotation:0,minRotation:0,font:{size:11},padding:8}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{autoSkip:false,maxRotation:90,minRotation:90,font:{size:10}}},
         y:{stacked:true,title:{display:true,text:'매출 (백만원)'},grid:{color:'#EEF1EF'}},
         y2:{position:'right',title:{display:true,text:'광고비 (백만원)'},grid:{display:false}}}}});
 }
 function renderOverlay(season){
   const d = R.daily[season];
-  const labels = d.map(x=>x.date.slice(5).replace('-', '/'));
-  const spend = d.map(x=>x.meta_s+x.naver_s+x.mob_s);
-  const revenue = d.map(x=>x.meta_r+x.naver_r+x.mob_r);
-  const roas = d.map((x,i)=>spend[i] ? revenue[i]/spend[i]*100 : 0);
-  mk('c-overlay',{data:{labels,datasets:[
-    {type:'bar',label:'광고비',data:spend.map(v=>v/1e6),backgroundColor:css('--seol-soft'),borderColor:css('--seol'),borderWidth:1,order:2},
-    {type:'bar',label:'매출액',data:revenue.map(v=>v/1e6),backgroundColor:css('--chu-soft'),borderColor:css('--chu'),borderWidth:1,order:2},
-    {type:'line',label:'ROAS',data:roas,borderColor:css('--good'),backgroundColor:css('--good'),yAxisID:'y2',tension:.25,pointRadius:2,pointHoverRadius:4,borderWidth:2,order:1}
-  ]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{tooltip:{callbacks:{title:t=>d[t[0].dataIndex].date,label:t=>t.dataset.label==='ROAS'?`ROAS: ${t.raw.toLocaleString(undefined,{maximumFractionDigits:0})}%`:`${t.dataset.label}: ${won(t.raw*1e6)}`}}},
-    scales:{x:{grid:{display:false},ticks:{autoSkip:true,maxTicksLimit:14,maxRotation:0,minRotation:0,font:{size:11},padding:8}},
-      y:{beginAtZero:true,title:{display:true,text:'광고비 · 매출액 (백만원)'},grid:{color:'#EEF1EF'}},
-      y2:{beginAtZero:true,position:'right',title:{display:true,text:'ROAS (%)'},grid:{display:false},ticks:{callback:v=>v.toLocaleString()+'%'}}}}});
+  let h = `<thead><tr><th class="l">일자</th><th>광고비</th><th>매출액</th><th>ROAS</th></tr></thead><tbody>`;
+  d.forEach(x=>{
+    const spend = x.meta_s+x.naver_s+x.mob_s;
+    const revenue = x.meta_r+x.naver_r+x.mob_r;
+    const roas = spend ? revenue/spend : 0;
+    const date = x.date.slice(5).replace('-', '/');
+    h += `<tr><td class="l"><b>${date}</b> <span class="muted">${x.d||''}</span></td><td>${won(spend)}</td><td>${won(revenue)}</td><td><b>${roasP(roas)}</b></td></tr>`;
+  });
+  const spendTotal = d.reduce((a,x)=>a+x.meta_s+x.naver_s+x.mob_s,0);
+  const revenueTotal = d.reduce((a,x)=>a+x.meta_r+x.naver_r+x.mob_r,0);
+  h += `</tbody><tfoot><tr><td class="l">합계</td><td>${won(spendTotal)}</td><td>${won(revenueTotal)}</td><td>${roasP(revenueTotal/spendTotal)}</td></tr></tfoot>`;
+  $('#t-daily').innerHTML = h;
 }
 document.querySelectorAll('#dy-season button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#dy-season button').forEach(x=>x.classList.toggle('on',x===b)); renderDaily(b.dataset.v); renderOverlay(b.dataset.v);
