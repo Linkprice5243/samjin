@@ -247,8 +247,7 @@ th.sort.on.asc::after{content:" ▴"}
       <a href="#channels" data-p="channels">매체별 비교</a>
       <a href="#daily" data-p="daily">일자별 추이</a>
       <a href="#creatives" data-p="creatives">소재 성과 <small>Meta</small></a>
-      <a href="#naver" data-p="naver">네이버 광고그룹</a>
-      <a href="#business" data-p="business">사업자몰 전략 <small>NEW</small></a>
+<a href="#business" data-p="business">사업자몰 전략 <small>NEW</small></a>
       <a href="#seollal27" data-p="seollal27">27년 설날 전략 <small>NEW</small></a>
       <a href="#budget" data-p="budget">4분기 예산 운영 <small>NEW</small></a>
     </nav>
@@ -316,8 +315,8 @@ th.sort.on.asc::after{content:" ▴"}
         <div class="chart tall"><canvas id="c-daily"></canvas></div>
       </div>
       <div class="panel mt">
-        <h2>D-day 기준으로 겹쳐 보기</h2><p class="sub">추석은 주문마감일(9/21), 설날은 명절 당일(2/17) 기준. 두 시즌 모두 D-14 ~ D-6 구간에 매출이 몰렸습니다.</p>
-        <div class="chart"><canvas id="c-overlay"></canvas></div>
+        <h2 id="dy-metric-title">일자별 광고 성과</h2><p class="sub">실제 날짜 기준 · 광고비 · 매출액 · ROAS</p>
+        <div class="chart tall"><canvas id="c-overlay"></canvas></div>
       </div>
     </section>
 
@@ -363,20 +362,7 @@ th.sort.on.asc::after{content:" ▴"}
         <div class="tbl-wrap"><table id="t-cr"></table></div>
       </div>
     </section>
-
-    <!-- 네이버 -->
-    <section class="page" id="p-naver">
-      <div class="head">
-        <div><h1>네이버 검색광고 광고그룹</h1><p>원본 리포트가 광고그룹 단위까지만 제공되어 키워드별 분석은 다음 보고 주기부터 가능합니다.</p></div>
-        <div class="seg" id="nv-season">
-          <button data-v="chu" class="on">추석</button>
-          <button data-v="seol">설날</button>
-        </div>
-      </div>
-      <div class="panel"><div class="tbl-wrap"><table id="t-nv"></table></div></div>
-    </section>
-
-    <!-- 사업자몰 전략: 신규 거래처 첫 구매 -->
+<!-- 사업자몰 전략: 신규 거래처 첫 구매 -->
     <section class="page" id="p-business">
       <div class="head"><div><h1>삼진어묵 사업자몰 광고 전략</h1><p>회원가입부터 첫 구매까지 · 신규 거래처 전환 중심</p></div></div>
       <div class="strategy-hero"><div class="eyebrow">B2B · FIRST PURCHASE</div><h2>회원가입 혜택에 첫 구매 쿠폰을 더해<br>신규 사업자의 첫 주문을 유도</h2><p>핵심 메시지: 회원가입 혜택 + 첫 구매 추가 할인쿠폰 · 중복 적용은 실제 운영 조건 확정 후 집행</p></div>
@@ -567,29 +553,36 @@ function renderChannels(){
 /* ---------- 일자별 ---------- */
 function renderDaily(season){
   const d = R.daily[season];
-  $('#dy-title').textContent = (season==='chu'?'추석 ':'설날 ') + (season==='chu'?R.meta.chu:R.meta.seol);
+  const seasonName = season==='chu' ? '추석' : '설날';
+  $('#dy-title').textContent = `${seasonName} ${season==='chu'?R.meta.chu:R.meta.seol} · 1일 단위`;
   mk('c-daily',{data:{labels:d.map(x=>x.date.slice(5).replace('-','/')),datasets:[
     {type:'bar',label:'Meta 매출',data:d.map(x=>x.meta_r/1e6),backgroundColor:'#13293D',stack:'r',order:2},
     {type:'bar',label:'네이버 매출',data:d.map(x=>x.naver_r/1e6),backgroundColor:'#5FA88F',stack:'r',order:2},
     {type:'bar',label:'모비온 매출',data:d.map(x=>x.mob_r/1e6),backgroundColor:'#D9B67A',stack:'r',order:2},
-    {type:'line',label:'합계 광고비',data:d.map(x=>(x.meta_s+x.naver_s+x.mob_s)/1e6),borderColor:css('--bad'),backgroundColor:css('--bad'),yAxisID:'y2',tension:.3,pointRadius:0,borderWidth:2,order:1}]},
+    {type:'line',label:'합계 광고비',data:d.map(x=>(x.meta_s+x.naver_s+x.mob_s)/1e6),borderColor:css('--bad'),backgroundColor:css('--bad'),yAxisID:'y2',tension:.25,pointRadius:2,pointHoverRadius:5,borderWidth:2,order:1}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      plugins:{tooltip:{callbacks:{title:t=>`${d[t[0].dataIndex].date} (${d[t[0].dataIndex].d})`,label:t=>`${t.dataset.label}: ${won(t.raw*1e6)}`}}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:0,autoSkipPadding:12}},
+      plugins:{tooltip:{callbacks:{title:t=>d[t[0].dataIndex].date,label:t=>`${t.dataset.label}: ${won(t.raw*1e6)}`}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{autoSkip:false,maxRotation:55,minRotation:55,font:{size:10}}},
         y:{stacked:true,title:{display:true,text:'매출 (백만원)'},grid:{color:'#EEF1EF'}},
         y2:{position:'right',title:{display:true,text:'광고비 (백만원)'},grid:{display:false}}}}});
+  renderOverlay(season);
 }
-function renderOverlay(){
-  const toMap = arr => Object.fromEntries(arr.map(x=>[parseInt(x.d.replace('D-','')), (x.meta_r+x.naver_r+x.mob_r)/1e6]));
-  const a = toMap(R.daily.chu), b = toMap(R.daily.seol);
-  const maxD = Math.max(...Object.keys(a).map(Number), ...Object.keys(b).map(Number));
-  const labels = []; for(let i=maxD;i>=0;i--) labels.push(i);
-  mk('c-overlay',{type:'line',data:{labels:labels.map(i=>'D-'+i),datasets:[
-    {label:'추석 매출',data:labels.map(i=>a[i]??null),borderColor:css('--chu'),backgroundColor:css('--chu-soft'),fill:true,tension:.3,pointRadius:0,borderWidth:2},
-    {label:'설날 매출',data:labels.map(i=>b[i]??null),borderColor:css('--seol'),tension:.3,pointRadius:0,borderWidth:2}]},
-    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},spanGaps:true,
-      plugins:{tooltip:{callbacks:{label:t=>t.raw==null?'':`${t.dataset.label}: ${won(t.raw*1e6)}`}}},
-      scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkipPadding:14}},y:{title:{display:true,text:'매출 (백만원)'},grid:{color:'#EEF1EF'}}}}});
+function renderOverlay(season){
+  const d = R.daily[season];
+  const seasonName = season==='chu' ? '추석' : '설날';
+  $('#dy-metric-title').textContent = `${seasonName} 일자별 광고비 · 매출액 · ROAS`;
+  const spend = d.map(x=>x.meta_s+x.naver_s+x.mob_s);
+  const revenue = d.map(x=>x.meta_r+x.naver_r+x.mob_r);
+  const roas = d.map((x,i)=>spend[i] ? revenue[i]/spend[i]*100 : 0);
+  mk('c-overlay',{data:{labels:d.map(x=>x.date.slice(5).replace('-','/')),datasets:[
+    {type:'bar',label:'광고비',data:spend.map(v=>v/1e6),backgroundColor:css('--seol'),borderRadius:3,order:2},
+    {type:'bar',label:'매출액',data:revenue.map(v=>v/1e6),backgroundColor:css('--chu'),borderRadius:3,order:2},
+    {type:'line',label:'ROAS',data:roas,borderColor:css('--good'),backgroundColor:css('--good'),yAxisID:'y2',tension:.25,pointRadius:2,pointHoverRadius:5,borderWidth:2,order:1}]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{tooltip:{callbacks:{title:t=>d[t[0].dataIndex].date,label:t=>t.dataset.label==='ROAS'?`ROAS: ${Math.round(t.raw).toLocaleString('ko-KR')}%`:`${t.dataset.label}: ${won(t.raw*1e6)}`}}},
+      scales:{x:{grid:{display:false},ticks:{autoSkip:false,maxRotation:55,minRotation:55,font:{size:10}}},
+        y:{title:{display:true,text:'광고비 · 매출액 (백만원)'},grid:{color:'#EEF1EF'}},
+        y2:{position:'right',title:{display:true,text:'ROAS (%)'},grid:{display:false},ticks:{callback:v=>v.toLocaleString()+'%'}}}}});
 }
 document.querySelectorAll('#dy-season button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#dy-season button').forEach(x=>x.classList.toggle('on',x===b)); renderDaily(b.dataset.v);
@@ -710,7 +703,7 @@ const rendered = {};
 const renderers = {
   overview:()=>{renderOverview('all');renderMix();},
   channels:renderChannels,
-  daily:()=>{renderDaily('chu');renderOverlay();},
+  daily:()=>{renderDaily('chu');},
   creatives:()=>{renderRank();renderVideo();renderTable();},
   naver:()=>renderNaver('chu'),
   business:()=>{},
