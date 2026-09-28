@@ -305,7 +305,7 @@ th.sort.on.asc::after{content:" ▴"}
     <!-- 일자별 추이 -->
     <section class="page" id="p-daily">
       <div class="head">
-        <div><h1>일자별 추이</h1><p>Meta·네이버 파워링크·모비온 합산 (브랜드검색 제외)</p></div>
+        <div><h1>일자별 추이</h1><p>Meta·네이버 검색광고·모비온 합산 (브랜드검색 제외)</p></div>
         <div class="seg" id="dy-season">
           <button data-v="chu" class="on">추석</button>
           <button data-v="seol">설날</button>
@@ -316,11 +316,7 @@ th.sort.on.asc::after{content:" ▴"}
         <div class="chart tall"><canvas id="c-daily"></canvas></div>
       </div>
       <div class="panel mt">
-        <h2>일자별 상세 데이터</h2><p class="sub">브랜드검색 제외 · 금액 단위: 원 · ROAS = 합계 매출 ÷ 합계 광고비</p>
-        <div class="tbl-wrap"><table id="t-daily"></table></div>
-      </div>
-      <div class="panel mt">
-        <h2>D-day 기준으로 겹쳐 보기</h2><p class="sub">추석은 주문마감일(9/21), 설날은 명절 당일(2/17) 기준. 기준일이 서로 다르므로 동일한 명절 날짜 기준 비교는 아닙니다. 기준일 이후 데이터도 포함합니다.</p>
+        <h2>D-day 기준으로 겹쳐 보기</h2><p class="sub">추석은 주문마감일(9/21), 설날은 명절 당일(2/17) 기준. 두 시즌 모두 D-14 ~ D-6 구간에 매출이 몰렸습니다.</p>
         <div class="chart"><canvas id="c-overlay"></canvas></div>
       </div>
     </section>
@@ -522,7 +518,7 @@ function renderOverview(basis){
   $('#ov-period').textContent = `추석 ${R.meta.chu} · 비교 설날 ${R.meta.seol}`;
   $('#ov-headline').textContent = `추석은 설날보다 광고비를 ${Math.abs(dS*100).toFixed(1)}% 덜 쓰고, 매출은 ${Math.abs(dR*100).toFixed(1)}%만 줄었습니다.`;
   $('#ov-note').textContent = basis==='all'
-    ? `전체 4개 채널 기준 · 통합 ROAS ${roasP(rs)} → ${roasP(rc)}`
+    ? `전체 5개 채널 기준 · 통합 ROAS ${roasP(rs)} → ${roasP(rc)}`
     : `브랜드검색(정액)을 뺀 일 단위 유료매체 기준 · ROAS ${roasP(rs)} → ${roasP(rc)}`;
   const rows = [['광고비',s.spend,c.spend,eok],['전환매출',s.revenue,c.revenue,eok],['ROAS',rs,rc,roasP]];
   $('#ov-duel').innerHTML = rows.map(([k,a,b,f])=>{
@@ -571,16 +567,8 @@ function renderChannels(){
 /* ---------- 일자별 ---------- */
 function renderDaily(season){
   const d = R.daily[season];
-  const spend = x => x.meta_s+x.naver_s+x.mob_s;
-  const revenue = x => x.meta_r+x.naver_r+x.mob_r;
-  const cols = ['meta_s','meta_r','naver_s','naver_r','mob_s','mob_r'];
-  const totalSpend = d.reduce((a,x)=>a+spend(x),0);
-  const totalRevenue = d.reduce((a,x)=>a+revenue(x),0);
-  $('#t-daily').innerHTML = '<thead><tr><th>날짜</th><th>D-day</th><th>Meta 광고비</th><th>Meta 매출</th><th>파워링크 광고비</th><th>파워링크 매출</th><th>모비온 광고비</th><th>모비온 매출</th><th>합계 광고비</th><th>합계 매출</th><th>ROAS</th></tr></thead><tbody>'
-    + d.map(x=>'<tr><td>'+x.date+'</td><td>'+x.d.replace('D-0','D-day')+'</td>'+cols.map(k=>'<td>'+won(x[k])+'</td>').join('')+'<td>'+won(spend(x))+'</td><td>'+won(revenue(x))+'</td><td>'+(spend(x)?roasP(revenue(x)/spend(x)):'—')+'</td></tr>').join('')
-    + '</tbody><tfoot><tr><td colspan="2">합계 ('+d.length+'일)</td>'+cols.map(k=>'<td>'+won(sum(d,k))+'</td>').join('')+'<td>'+won(totalSpend)+'</td><td>'+won(totalRevenue)+'</td><td>'+(totalSpend?roasP(totalRevenue/totalSpend):'—')+'</td></tr></tfoot>';
   $('#dy-title').textContent = (season==='chu'?'추석 ':'설날 ') + (season==='chu'?R.meta.chu:R.meta.seol);
-  mk('c-daily',{type:'bar',data:{labels:d.map(x=>x.date.slice(5).replace('-','/')),datasets:[
+  mk('c-daily',{data:{labels:d.map(x=>x.date.slice(5).replace('-','/')),datasets:[
     {type:'bar',label:'Meta 매출',data:d.map(x=>x.meta_r/1e6),backgroundColor:'#13293D',stack:'r',order:2},
     {type:'bar',label:'네이버 매출',data:d.map(x=>x.naver_r/1e6),backgroundColor:'#5FA88F',stack:'r',order:2},
     {type:'bar',label:'모비온 매출',data:d.map(x=>x.mob_r/1e6),backgroundColor:'#D9B67A',stack:'r',order:2},
@@ -592,12 +580,11 @@ function renderDaily(season){
         y2:{position:'right',title:{display:true,text:'광고비 (백만원)'},grid:{display:false}}}}});
 }
 function renderOverlay(){
-  const toMap = arr => Object.fromEntries(arr.map(x=>[Number(x.d.slice(1)), (x.meta_r+x.naver_r+x.mob_r)/1e6]));
+  const toMap = arr => Object.fromEntries(arr.map(x=>[parseInt(x.d.replace('D-','')), (x.meta_r+x.naver_r+x.mob_r)/1e6]));
   const a = toMap(R.daily.chu), b = toMap(R.daily.seol);
-  const offsets = [...Object.keys(a), ...Object.keys(b)].map(Number);
-  const minD = Math.min(...offsets), maxD = Math.max(...offsets);
-  const labels = []; for(let i=minD;i<=maxD;i++) labels.push(i);
-  mk('c-overlay',{type:'line',data:{labels:labels.map(i=>i===0?'D-day':i>0?'D+'+i:'D'+i),datasets:[
+  const maxD = Math.max(...Object.keys(a).map(Number), ...Object.keys(b).map(Number));
+  const labels = []; for(let i=maxD;i>=0;i--) labels.push(i);
+  mk('c-overlay',{type:'line',data:{labels:labels.map(i=>'D-'+i),datasets:[
     {label:'추석 매출',data:labels.map(i=>a[i]??null),borderColor:css('--chu'),backgroundColor:css('--chu-soft'),fill:true,tension:.3,pointRadius:0,borderWidth:2},
     {label:'설날 매출',data:labels.map(i=>b[i]??null),borderColor:css('--seol'),tension:.3,pointRadius:0,borderWidth:2}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},spanGaps:true,
